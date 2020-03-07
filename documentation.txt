@@ -1,0 +1,36 @@
+The program checks all possible command line options of the instrument's functionality in its main()-function and invokes the appropriate action with the help of following handling functions:
+
+- int valid(const char* param_name, const char* value); validates the values for the configuration parameters read from the command line.
+
+- int segment(const char* param_name); returns the segment number in the configuration file of the argument configuration parameter.
+
+- int position(const char* param_name); returns the position within its segment of the argument configuration parameter.
+ 
+- unsigned char checkBit(int fd, const char* param_name); checks if the responsible bit for the argument configuration parameter is set or not. First the segment of the parameter is located using the segment number. Afterwards we skip the segment type byte of the meta information and locate the byte of the responsible bit within the 7 bytes meta information using the position of the parameter pos. After reading that byte in the buffer variable, we perform a logical AND on that byte and a mask, in which only the bit in the position of the responsible bit is set (bit_number). The position of the set bit in the mask is changed through bit shifting. The result of this operation is returned by the function - it is 0 if the bit is not set and an unsigned not null value if the bit is set.
+
+- void setBit(int fd, const char* param_name); sets the bit responsible for the argument configuration parameter. Its implementation is similar to the checkBit-function but instead of just checking the value of the bit it sets it performing an OR-logical operation with the mask:
+
+     buffer = buffer | (mask >> bit_number);
+
+The result is written to the configuration file.
+
+- void unsetBit(int fd, const char* param_name); unsets the bit responsible for the argument configuration parameter, performing the operation:
+
+     buffer = buffer & ~(mask >> bit_number);
+
+The result is written to the configuration file.
+
+- unsigned char locate(int fd, const char* param_name); finds the location of the argument configuration parameter within the configuration file with file descriptor fd using its segment number seg and its position pos within the segment. Additionally here we need the segment type to navigate 16*pos, 4*pos or pos bytes from the beginning of the information part of the segment, for a text, numeric or byte segment respectively. The function repositions the (read and write) offset within the file to the position of the conf. parameter and returns its segment type identificator.
+
+- void write_value(int fd, const char* param_name, const char* value); first locates the argument configuration parameter within the configuration file with file descriptor fd and then writes the argument value to the file according to the segment type(the validity of the value is already checked).
+
+- void read_value(int fd, const char* param_name); locates the configuration parameter, reads its value from the configuration file according to the segment type and prints the parameter name : parameter value pair.
+
+- void write_segment(int fd, const char* segm, const char* type); is used by the create option -c and writes an empty segment to the newly created configuration file. The arguments of the function define the segment number and segment type.
+
+Reference:
+
+https://www.poftut.com/use-linux-xxd-command-tutorial-hex-binary-operations-example/
+https://www.computerhope.com/unix/umake.htm
+
+
